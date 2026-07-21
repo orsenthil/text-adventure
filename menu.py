@@ -56,18 +56,32 @@ class MenuBuilder:
 
         return entries
 
-    def format_menu(self, entries: list[tuple[str, str]]) -> str:
+    def format_menu(self, entries: list[tuple[str, str]], width: int = 44) -> str:
         """Return the formatted menu string ready to print."""
         lines = ["", "What do you do?"]
         for i, (label, _cmd) in enumerate(entries, start=1):
             lines.append(f"  [{i}] {label}")
 
         # Separator then shortcuts
-        lines.append("  " + "─" * 44)
-        shortcut_line = "  " + "   ".join(f"[{k}] {name}" for k, _cmd, name in self.SHORTCUTS)
-        lines.append(shortcut_line)
+        lines.append("  " + "─" * width)
+        shortcuts = [f"[{k}] {name}" for k, _cmd, name in self.SHORTCUTS]
+        lines.append(self._pack_shortcuts(shortcuts, width))
         lines.append("")
         return "\n".join(lines)
+
+    def _pack_shortcuts(self, shortcuts: list[str], width: int) -> str:
+        """Join shortcut labels, wrapping onto extra lines if they overflow width."""
+        rows: list[str] = []
+        current = "  "
+        for shortcut in shortcuts:
+            candidate = current + ("   " if current.strip() else "") + shortcut
+            if len(candidate) > width + 2 and current.strip():
+                rows.append(current)
+                current = "  " + shortcut
+            else:
+                current = candidate
+        rows.append(current)
+        return "\n".join(rows)
 
     def resolve(self, raw: str, entries: list[tuple[str, str]]) -> str | None:
         """

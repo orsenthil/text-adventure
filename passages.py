@@ -125,7 +125,7 @@ class PassageLibrary:
             prev = v
         return result
 
-    def get_passage(self, name: str) -> str:
+    def get_passage(self, name: str, width: int = 68) -> str:
         """Return a curated Homer excerpt, formatted for display."""
         if name not in self.curated:
             return ""
@@ -140,13 +140,13 @@ class PassageLibrary:
         # Capitalise first letter, trim to last sentence boundary
         excerpt = excerpt.strip().capitalize()
         # Wrap and indent
-        lines = textwrap.wrap(excerpt, width=68)
+        lines = textwrap.wrap(excerpt, width=width)
         return "\n".join("  " + ln for ln in lines)
 
-    def format_passage(self, name: str) -> str:
+    def format_passage(self, name: str, width: int = 68) -> str:
         """Return passage surrounded by a decorative border."""
-        text = self.get_passage(name)
+        text = self.get_passage(name, width=width)
         if not text:
             return ""
-        border = "  " + "─" * 66
+        border = "  " + "─" * width
         return f"\n{border}\n{text}\n{border}\n"

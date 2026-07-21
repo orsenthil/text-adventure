@@ -1,5 +1,6 @@
 """Game: main loop, command dispatch, win/lose conditions."""
 
+import shutil
 import textwrap
 from typing import TYPE_CHECKING
 
@@ -13,23 +14,31 @@ if TYPE_CHECKING:
     from scene import Scene
     from object import WorldObject
 
-WIDTH = 72
+MIN_WIDTH = 40
+MAX_WIDTH = 100
+
+
+def _width() -> int:
+    """Current wrap width, based on the connected terminal's size."""
+    cols = shutil.get_terminal_size(fallback=(72, 24)).columns
+    return max(MIN_WIDTH, min(cols - 2, MAX_WIDTH))
 
 
 def wrap(text: str) -> str:
-    """Wrap text to WIDTH characters."""
+    """Wrap text to the current terminal width."""
+    width = _width()
     paragraphs = text.split("\n")
     wrapped = []
     for p in paragraphs:
         if p.strip():
-            wrapped.append(textwrap.fill(p.strip(), width=WIDTH))
+            wrapped.append(textwrap.fill(p.strip(), width=width))
         else:
             wrapped.append("")
     return "\n".join(wrapped)
 
 
 def hr() -> str:
-    return "─" * WIDTH
+    return "─" * _width()
 
 
 # The storytelling sequence (memory scenes), in order
@@ -74,7 +83,7 @@ class Game:
         else:
             self._print(scene.long_desc)
             if scene.passage_key:
-                passage = self.passages.format_passage(scene.passage_key)
+                passage = self.passages.format_passage(scene.passage_key, width=_width() - 4)
                 if passage:
                     print(passage)
             scene.visited = True
@@ -90,11 +99,15 @@ class Game:
         self._current_menu = self.menu_builder.build(
             self.player.current_scene, self.player
         )
-        print(self.menu_builder.format_menu(self._current_menu))
+        print(self.menu_builder.format_menu(self._current_menu, width=_width() - 2))
+
+    def _clear_screen(self) -> None:
+        print("\x1b[2J\x1b[H", end="")
 
     # ----------------------------------------------------------------- loop
 
     def run(self) -> None:
+        self._clear_screen()
         self._show_intro()
         self._print_scene()
         self._print_menu()
@@ -105,6 +118,8 @@ class Game:
             except (EOFError, KeyboardInterrupt):
                 print("\nFarewell, wanderer.")
                 break
+
+            self._clear_screen()
 
             if not raw:
                 self._print_menu()
@@ -188,7 +203,7 @@ class Game:
         print(hr())
         self._print(scene.long_desc)
         if scene.passage_key:
-            passage = self.passages.format_passage(scene.passage_key)
+            passage = self.passages.format_passage(scene.passage_key, width=_width() - 4)
             if passage:
                 print(passage)
         self._print_menu()
@@ -421,7 +436,7 @@ class Game:
                         "They row harder. The voices fade. The sea opens out ahead. "
                         "You have passed the Sirens."
                     )
-                    passage = self.passages.format_passage("sirens_song")
+                    passage = self.passages.format_passage("sirens_song", width=_width() - 4)
                     if passage:
                         print(passage)
                     self.player.flags["sirens_passed"] = True
@@ -778,7 +793,7 @@ class Game:
             "Eurycleia goes to fetch Penelope."
         )
         print()
-        passage = self.passages.format_passage("penelope_reunion")
+        passage = self.passages.format_passage("penelope_reunion", width=_width() - 4)
         if passage:
             print(passage)
         print()
